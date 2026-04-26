@@ -9,6 +9,9 @@ import authRoutes from "./routes/authRoutes.js";
 import recordRoutes from "./routes/recordRoutes.js";
 import insightsRoutes from "./routes/insightsRoutes.js";
 import workspaceRoutes from "./routes/workspaceRoutes.js";
+import predictionsRoutes from "./routes/predictionsRoutes.js";
+import queryRoutes from "./routes/queryRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js";
 
 dotenv.config();
 
@@ -42,6 +45,9 @@ app.use("/api/auth", authRoutes);
 app.use("/api/records", recordRoutes);
 app.use("/api/insights", insightsRoutes);
 app.use("/api/workspace", workspaceRoutes);
+app.use("/api/predictions", predictionsRoutes);
+app.use("/api/query", queryRoutes);
+app.use("/api/report", reportRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
