@@ -6,6 +6,7 @@ import morgan from "morgan";
 import { connectDB } from "./config/db.js";
 import { errorHandler, notFound } from "./middleware/errorMiddleware.js";
 import authRoutes from "./routes/authRoutes.js";
+import recordRoutes from "./routes/recordRoutes.js";
 
 dotenv.config();
 
@@ -36,6 +37,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/records", recordRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
