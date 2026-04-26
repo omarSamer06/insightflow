@@ -67,5 +67,27 @@ body {
   .ui-subtitle {
     @apply text-sm text-slate-400 leading-relaxed;
   }
+  .insight-glow {
+    @apply relative overflow-hidden rounded-2xl;
+    box-shadow:
+      0 0 0 1px rgba(99, 102, 241, 0.25),
+      0 20px 50px -20px rgba(99, 102, 241, 0.35),
+      0 0 80px -30px rgba(139, 92, 246, 0.25);
+  }
+}
+
+@keyframes insight-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.insight-reveal {
+  animation: insight-reveal 0.5s ease-out both;
 }
 

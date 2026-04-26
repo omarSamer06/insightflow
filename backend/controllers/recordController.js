@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Record from "../models/Record.js";
+import { canMutateWorkspaceData, getWorkspaceForUserOrFail } from "../utils/workspaceMembers.js";
 
 function parseNumber(value, defaultValue) {
   const n = Number(value);
@@ -30,6 +31,16 @@ function buildRecordsQuery({ workspaceId, search, startDate, endDate }) {
   if (Object.keys(dateFilter).length) query.date = dateFilter;
 
   return query;
+}
+
+async function assertCanMutateRecords(req, res, workspaceId) {
+  const workspace = await getWorkspaceForUserOrFail(req.user, workspaceId, res);
+  if (!canMutateWorkspaceData(req.user, workspace)) {
+    res.status(403);
+    throw new Error(
+      "You do not have permission to create or change records. Workspace members can view data only — ask an admin."
+    );
+  }
 }
 
 function parseDateRange(req, res) {
@@ -73,6 +84,7 @@ function parseSort(req) {
 export async function createRecord(req, res, next) {
   try {
     const workspaceId = getWorkspaceId(req, res);
+    await assertCanMutateRecords(req, res, workspaceId);
     const { title, amount, category, date } = req.body || {};
 
     const trimmedTitle = String(title || "").trim();
@@ -166,6 +178,7 @@ export async function getRecords(req, res, next) {
 export async function updateRecord(req, res, next) {
   try {
     const workspaceId = getWorkspaceId(req, res);
+    await assertCanMutateRecords(req, res, workspaceId);
     const recordId = String(req.params.id || "").trim();
 
     if (!mongoose.Types.ObjectId.isValid(recordId)) {
@@ -236,6 +249,7 @@ export async function updateRecord(req, res, next) {
 export async function deleteRecord(req, res, next) {
   try {
     const workspaceId = getWorkspaceId(req, res);
+    await assertCanMutateRecords(req, res, workspaceId);
     const recordId = String(req.params.id || "").trim();
 
     if (!mongoose.Types.ObjectId.isValid(recordId)) {

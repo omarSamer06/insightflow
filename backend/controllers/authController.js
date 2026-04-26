@@ -69,7 +69,7 @@ export async function registerUser(req, res, next) {
     const workspace = new Workspace({
       name: workspaceName,
       owner: user._id,
-      members: [user._id],
+      members: [{ user: user._id, role: "admin" }],
     });
     await workspace.save({ session });
 

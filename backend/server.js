@@ -7,6 +7,8 @@ import { connectDB } from "./config/db.js";
 import { errorHandler, notFound } from "./middleware/errorMiddleware.js";
 import authRoutes from "./routes/authRoutes.js";
 import recordRoutes from "./routes/recordRoutes.js";
+import insightsRoutes from "./routes/insightsRoutes.js";
+import workspaceRoutes from "./routes/workspaceRoutes.js";
 
 dotenv.config();
 
@@ -38,6 +40,8 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/records", recordRoutes);
+app.use("/api/insights", insightsRoutes);
+app.use("/api/workspace", workspaceRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

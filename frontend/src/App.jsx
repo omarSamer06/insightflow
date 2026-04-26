@@ -6,6 +6,7 @@ import NotFound from "./pages/NotFound";
 import Records from "./pages/Records";
 import Register from "./pages/Register";
 import Settings from "./pages/Settings";
+import Team from "./pages/Team";
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/records" element={<Records />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/team" element={<Team />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />

@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 const mobileNav = [
   { to: "/dashboard", label: "Home" },
   { to: "/records", label: "Records" },
+  { to: "/team", label: "Team" },
   { to: "/settings", label: "Settings" },
 ];
 
