@@ -1,8 +1,35 @@
 import Record from "../models/Record.js";
-import { interpretQueryWithOpenAI } from "../services/nlQueryService.js";
-import { buildNlRecordQuery } from "../utils/buildNlRecordQuery.js";
+import { requestNlQueryInterpretation } from "../services/nlQueryAiService.js";
+import { executeNlInstruction } from "../services/nlQueryExecutor.js";
+import { validateAndNormalizeInstruction } from "../services/nlQueryValidation.js";
+import { buildRecordMetadata } from "../utils/recordMetadataSummary.js";
 
-const LIST_LIMIT = 100;
+const MAX_RECORDS_FOR_CONTEXT = 5000;
+
+/**
+ * @param {object} instruction
+ * @param {object} result
+ */
+function buildAnswerString(instruction, result) {
+  if (!result) return "No result.";
+  if (result.kind === "message") return result.text;
+  if (result.kind === "summary") {
+    if (result.metric === "max_month" && result.value) {
+      return `The month with the highest total is ${result.value} (${result.amount} total).`;
+    }
+    if (result.metric === "top_category" && result.value) {
+      return `Top category by amount is ${result.value} (${result.amount} total).`;
+    }
+    if (result.label && result.value != null) {
+      return `${result.label}: ${result.value}.`;
+    }
+  }
+  if (result.kind === "records") {
+    const n = result.count;
+    return `Found ${n} record${n === 1 ? "" : "s"} (limit ${result.limit}).`;
+  }
+  return "Done.";
+}
 
 function getWorkspaceId(req, res) {
   const workspaceId = req.user?.workspace;
@@ -14,129 +41,83 @@ function getWorkspaceId(req, res) {
 }
 
 /**
- * POST /api/query — natural language → OpenAI-structured filters → workspace records.
+ * POST /api/query — natural language → validated JSON instruction → safe DB ops.
  * Body: { userQuery: string }
  */
 export async function postNaturalLanguageQuery(req, res, next) {
   try {
+    const workspaceId = getWorkspaceId(req, res);
     const userQuery = String(req.body?.userQuery ?? "").trim();
+
     if (!userQuery) {
       res.status(400);
       throw new Error("userQuery is required");
     }
-
-    const workspaceId = getWorkspaceId(req, res);
-
-    const interpreted = await interpretQueryWithOpenAI(userQuery);
-
-    if (interpreted.ok === false) {
-      if (interpreted.error === "OPENAI_NOT_CONFIGURED") {
-        return res.status(200).json({
-          success: true,
-          message:
-            "Natural language search is not available. Configure OPENAI_API_KEY on the server to enable it.",
-          data: {
-            mode: "unavailable",
-            userQuery,
-            responseType: null,
-            filters: null,
-            records: [],
-            summary: null,
-          },
-        });
-      }
-      if (process.env.NODE_ENV !== "production") {
-        console.warn("NL query parse failed:", interpreted.error);
-      }
-      return res.status(200).json({
-        success: true,
-        message:
-          "We could not interpret that question safely. Try rephrasing, or use explicit filters in the app.",
-        data: {
-          mode: "fallback",
-          userQuery,
-          responseType: null,
-          filters: null,
-          records: [],
-          summary: null,
-        },
-      });
+    if (userQuery.length > 4000) {
+      res.status(400);
+      throw new Error("userQuery is too long");
     }
 
-    const { responseType, filters } = interpreted.value;
-    const match = buildNlRecordQuery(workspaceId, filters);
+    const records = await Record.find({ workspace: workspaceId })
+      .select("title amount category date")
+      .limit(MAX_RECORDS_FOR_CONTEXT)
+      .lean();
 
-    if (responseType === "summary") {
-      const [agg] = await Record.aggregate([
-        { $match: match },
-        {
-          $group: {
-            _id: null,
-            count: { $sum: 1 },
-            totalAmount: { $sum: "$amount" },
-          },
-        },
-      ]);
+    const metadata = buildRecordMetadata(records);
+    const ai = await requestNlQueryInterpretation(userQuery, metadata);
 
-      const byCategory = await Record.aggregate([
-        { $match: match },
-        {
-          $group: {
-            _id: "$category",
-            count: { $sum: 1 },
-            totalAmount: { $sum: "$amount" },
-          },
-        },
-        { $sort: { totalAmount: -1 } },
-        { $limit: 20 },
-      ]);
-
+    if (!ai.ok) {
       return res.status(200).json({
         success: true,
-        message: "Query processed",
+        message: ai.fallbackMessage,
         data: {
-          mode: "ok",
-          userQuery,
-          responseType: "summary",
-          filters,
-          records: null,
-          summary: {
-            count: agg?.count ?? 0,
-            totalAmount: round2(agg?.totalAmount ?? 0),
-            byCategory: byCategory.map((c) => ({
-              category: c._id,
-              count: c.count,
-              totalAmount: round2(c.totalAmount),
-            })),
+          answer: ai.fallbackMessage,
+          interpretation: null,
+          result: null,
+          metadata: {
+            recordCountInContext: records.length,
+            capped: records.length >= MAX_RECORDS_FOR_CONTEXT,
           },
         },
       });
     }
 
-    const records = await Record.find(match)
-      .sort({ date: -1 })
-      .limit(LIST_LIMIT)
-      .lean()
-      .exec();
+    const instruction = validateAndNormalizeInstruction(ai.parsed);
+    if (!instruction) {
+      return res.status(200).json({
+        success: true,
+        message: "The model returned a format that could not be applied safely.",
+        data: {
+          answer:
+            "I could not understand that in a safe, structured way. Try asking for a total, average, or filtered list using categories or recent dates.",
+          interpretation: null,
+          rawModelOutput: process.env.NODE_ENV === "development" ? ai.parsed : undefined,
+          result: null,
+          metadata: {
+            recordCountInContext: records.length,
+            capped: records.length >= MAX_RECORDS_FOR_CONTEXT,
+          },
+        },
+      });
+    }
+
+    const result = await executeNlInstruction(workspaceId, instruction);
+    const answer = buildAnswerString(instruction, result);
 
     return res.status(200).json({
       success: true,
       message: "Query processed",
       data: {
-        mode: "ok",
-        userQuery,
-        responseType: "records",
-        filters,
-        records,
-        summary: null,
-        meta: { limit: LIST_LIMIT, returned: records.length },
+        answer,
+        interpretation: instruction,
+        result,
+        metadata: {
+          recordCountInContext: records.length,
+          capped: records.length >= MAX_RECORDS_FOR_CONTEXT,
+        },
       },
     });
   } catch (error) {
     next(error);
   }
-}
-
-function round2(n) {
-  return Math.round(Number(n) * 100) / 100;
 }

@@ -16,15 +16,5 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-/** POST /api/query — natural language → filtered records or summary (workspace-scoped). */
-export async function postNaturalLanguageQuery(userQuery) {
-  return api.post("/query", { userQuery });
-}
-
-/** GET /api/report — workspace aggregate report (summary, trends, AI narrative). */
-export async function fetchWorkspaceReport() {
-  return api.get("/report");
-}
-
 export default api;
 

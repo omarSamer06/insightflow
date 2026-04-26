@@ -3,6 +3,10 @@ import { useAuth } from "../context/AuthContext";
 
 const mobileNav = [
   { to: "/dashboard", label: "Home" },
+  { to: "/assistant", label: "Assistant" },
+  { to: "/report", label: "Reports" },
+  { to: "/insights", label: "Insights" },
+  { to: "/forecast", label: "Forecast" },
   { to: "/records", label: "Records" },
   { to: "/team", label: "Team" },
   { to: "/settings", label: "Settings" },

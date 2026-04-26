@@ -1,98 +1,153 @@
-import { buildInsightStatsFromRecords } from "./insightAggregation.js";
+import mongoose from "mongoose";
 
-/**
- * Workspace report: summary (totals, date range, trends) + category breakdown.
- * @param {Array<{ amount: number, category: string, date: Date | string }>} records
- */
-export function buildReportFromRecords(records) {
-  const list = Array.isArray(records) ? records : [];
-  const stats = buildInsightStatsFromRecords(list);
-
-  let minD = null;
-  let maxD = null;
-  for (const r of list) {
-    const d = new Date(r.date);
-    if (Number.isNaN(d.getTime())) continue;
-    if (!minD || d < minD) minD = d;
-    if (!maxD || d > maxD) maxD = d;
-  }
-
-  const categoryMap = new Map();
-  for (const r of list) {
-    const name = String(r.category || "Uncategorized").trim() || "Uncategorized";
-    const amt = Number(r.amount) || 0;
-    if (!categoryMap.has(name)) {
-      categoryMap.set(name, { name, totalAmount: 0, recordCount: 0 });
-    }
-    const c = categoryMap.get(name);
-    c.totalAmount += amt;
-    c.recordCount += 1;
-  }
-
-  const totalAmt = Number(stats.totalAmount) || 0;
-  const categoryBreakdown = Array.from(categoryMap.values())
-    .map((c) => ({
-      category: c.name,
-      totalAmount: roundMoney(c.totalAmount),
-      recordCount: c.recordCount,
-      percentOfTotal: totalAmt > 0 ? round2((c.totalAmount / totalAmt) * 100) : 0,
-    }))
-    .sort((a, b) => b.totalAmount - a.totalAmount);
-
-  const mt = stats.monthlyTrends;
-  const trends = buildTrends(mt);
-
-  return {
-    summary: {
-      totalAmount: stats.totalAmount,
-      recordCount: stats.recordCount,
-      topCategory: stats.topCategory,
-      dateRange: {
-        from: minD ? minD.toISOString() : null,
-        to: maxD ? maxD.toISOString() : null,
-      },
-      trends,
-    },
-    categoryBreakdown,
-  };
-}
-
-function buildTrends(monthlyTrends) {
-  const mt = Array.isArray(monthlyTrends) ? monthlyTrends : [];
-  if (mt.length < 2) {
-    return {
-      monthOverMonthChangePercent: null,
-      recentDirection: "insufficient_data",
-      comparedMonths: null,
-      monthly: mt,
-    };
-  }
-
-  const a = mt[mt.length - 2];
-  const b = mt[mt.length - 1];
-  const prev = Number(a.totalAmount) || 0;
-  const curr = Number(b.totalAmount) || 0;
-  let monthOverMonthChangePercent = null;
-  if (prev > 0) {
-    monthOverMonthChangePercent = round2(((curr - prev) / prev) * 100);
-  } else {
-    monthOverMonthChangePercent = curr > 0 ? 100 : 0;
-  }
-  const delta = curr - prev;
-  const recentDirection = delta > 0 ? "up" : delta < 0 ? "down" : "flat";
-
-  return {
-    monthOverMonthChangePercent,
-    recentDirection,
-    comparedMonths: { previous: a.month, current: b.month },
-    monthly: mt,
-  };
-}
-
-function roundMoney(n) {
-  return Math.round(Number(n) * 100) / 100;
-}
+import Record from "../models/Record.js";
 
 function round2(n) {
   return Math.round(Number(n) * 100) / 100;
+}
+
+/**
+ * Server-side aggregations for workspace report (no raw record rows returned).
+ * @param {import("mongoose").Types.ObjectId} workspaceId
+ * @returns {Promise<{
+ *   summary: object,
+ *   trends: object,
+ *   categories: object
+ * }>}
+ */
+export async function aggregateWorkspaceReport(workspaceId) {
+  const wid = new mongoose.Types.ObjectId(workspaceId);
+
+  const [row] = await Record.aggregate([
+    { $match: { workspace: wid } },
+    {
+      $facet: {
+        totals: [
+          {
+            $group: {
+              _id: null,
+              totalAmount: { $sum: "$amount" },
+              totalRecords: { $sum: 1 },
+            },
+          },
+        ],
+        byMonth: [
+          {
+            $group: {
+              _id: {
+                $dateToString: { format: "%Y-%m", date: "$date", timezone: "UTC" },
+              },
+              totalAmount: { $sum: "$amount" },
+              recordCount: { $sum: 1 },
+            },
+          },
+          { $sort: { _id: 1 } },
+        ],
+        byCategory: [
+          {
+            $group: {
+              _id: "$category",
+              totalAmount: { $sum: "$amount" },
+              recordCount: { $sum: 1 },
+            },
+          },
+          { $sort: { totalAmount: -1, recordCount: -1 } },
+        ],
+        dateBounds: [
+          {
+            $group: {
+              _id: null,
+              firstDate: { $min: "$date" },
+              lastDate: { $max: "$date" },
+            },
+          },
+        ],
+      },
+    },
+  ]).exec();
+
+  const facet = row || { totals: [], byMonth: [], byCategory: [], dateBounds: [] };
+  const t = facet.totals?.[0];
+  const totalAmount = t ? round2(t.totalAmount) : 0;
+  const totalRecords = t ? t.totalRecords : 0;
+  const hasData = totalRecords > 0;
+
+  const db = facet.dateBounds?.[0];
+  const dateRange =
+    hasData && db?.firstDate && db?.lastDate
+      ? { from: db.firstDate.toISOString(), to: db.lastDate.toISOString() }
+      : null;
+
+  const monthlyTotals = (facet.byMonth || []).map((m) => ({
+    month: m._id,
+    totalAmount: round2(m.totalAmount),
+    recordCount: m.recordCount,
+  }));
+
+  const monthOverMonth = computeMonthOverMonth(monthlyTotals);
+  const recentMonths = monthlyTotals.slice(-12);
+
+  const catRows = facet.byCategory || [];
+  const top = catRows[0]
+    ? {
+        name: String(catRows[0]._id || "Uncategorized"),
+        totalAmount: round2(catRows[0].totalAmount),
+        recordCount: catRows[0].recordCount,
+      }
+    : null;
+
+  const byAmount = catRows.map((c) => ({
+    name: String(c._id || "Uncategorized"),
+    totalAmount: round2(c.totalAmount),
+    recordCount: c.recordCount,
+  }));
+
+  return {
+    summary: {
+      totalAmount,
+      totalRecords,
+      hasData,
+      dateRange,
+      topCategory: top,
+    },
+    trends: {
+      monthlyTotals: recentMonths,
+      monthOverMonth,
+      latestMonth: monthlyTotals.length ? monthlyTotals[monthlyTotals.length - 1].month : null,
+    },
+    categories: {
+      top,
+      byAmount: byAmount.slice(0, 25),
+      distinctCount: byAmount.length,
+    },
+  };
+}
+
+/**
+ * @param {Array<{ month: string, totalAmount: number, recordCount: number }>} monthsSorted asc
+ */
+function computeMonthOverMonth(monthsSorted) {
+  if (!monthsSorted || monthsSorted.length < 2) {
+    return null;
+  }
+  const prev = monthsSorted[monthsSorted.length - 2];
+  const curr = monthsSorted[monthsSorted.length - 1];
+  const delta = round2(curr.totalAmount - prev.totalAmount);
+  const base = prev.totalAmount;
+  let percentChange = null;
+  if (Number.isFinite(base) && base !== 0) {
+    percentChange = round2((delta / base) * 100);
+  } else if (Number.isFinite(base) && base === 0 && curr.totalAmount > 0) {
+    percentChange = null; // from zero — avoid misleading infinity
+  }
+  const direction = delta > 0 ? "up" : delta < 0 ? "down" : "flat";
+  return {
+    fromMonth: prev.month,
+    toMonth: curr.month,
+    previousAmount: prev.totalAmount,
+    currentAmount: curr.totalAmount,
+    deltaAmount: delta,
+    percentChange,
+    direction,
+  };
 }

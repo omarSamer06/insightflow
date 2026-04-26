@@ -1,6 +1,5 @@
-import Record from "../models/Record.js";
-import { generateReportExplanation } from "../services/reportAiService.js";
-import { buildReportFromRecords } from "../utils/reportAggregation.js";
+import { generateReportNarrative } from "../services/reportAiService.js";
+import { aggregateWorkspaceReport } from "../utils/reportAggregation.js";
 
 function getWorkspaceId(req, res) {
   const workspaceId = req.user?.workspace;
@@ -12,34 +11,29 @@ function getWorkspaceId(req, res) {
 }
 
 /**
- * GET /api/report — workspace aggregate report (summary, trends, categories, AI narrative).
+ * GET /api/report — workspace-scoped aggregated metrics + optional AI narrative.
  */
 export async function getReport(req, res, next) {
   try {
     const workspaceId = getWorkspaceId(req, res);
+    const report = await aggregateWorkspaceReport(workspaceId);
+    const ai = await generateReportNarrative(report);
 
-    const records = await Record.find({ workspace: workspaceId })
-      .select("amount category date")
-      .lean()
-      .exec();
-
-    const { summary, categoryBreakdown } = buildReportFromRecords(records);
-    const { explanation, source } = await generateReportExplanation({
-      summary,
-      categoryBreakdown,
-    });
-
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Report ready",
       data: {
-        summary,
-        categoryBreakdown,
-        ai: {
-          explanation,
-          source,
+        summary: {
+          ...report.summary,
+          narrative: {
+            performanceOverview: ai.performanceOverview,
+            growthOrDecline: ai.growthOrDecline,
+            recommendation: ai.recommendation,
+            source: ai.source,
+          },
         },
-        generatedAt: new Date().toISOString(),
+        trends: report.trends,
+        categories: report.categories,
       },
     });
   } catch (error) {
