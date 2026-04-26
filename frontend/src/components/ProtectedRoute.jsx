@@ -7,9 +7,16 @@ export default function ProtectedRoute() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center">
-        <div className="rounded-xl border border-white/10 bg-slate-900/60 px-6 py-4 shadow-lg">
-          <p className="text-sm text-slate-200">Loading...</p>
+      <div className="flex min-h-screen items-center justify-center bg-[#0a0f1a]">
+        <div className="ui-card flex items-center gap-4 px-8 py-6 shadow-xl">
+          <div
+            className="h-10 w-10 animate-spin rounded-full border-2 border-indigo-500/30 border-t-indigo-400"
+            aria-hidden
+          />
+          <div>
+            <p className="text-sm font-semibold text-slate-100">Loading workspace</p>
+            <p className="text-xs text-slate-500">Verifying your session…</p>
+          </div>
         </div>
       </div>
     );
@@ -21,4 +28,3 @@ export default function ProtectedRoute() {
 
   return <Outlet />;
 }
-

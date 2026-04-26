@@ -40,78 +40,107 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-900/50 shadow-xl">
-        <div className="p-6 sm:p-8">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-fuchsia-500" />
-            <div>
-              <p className="text-sm font-semibold">Create your account</p>
-              <p className="text-xs text-slate-400">A workspace will be created automatically</p>
+    <div className="relative min-h-screen overflow-hidden">
+      <div className="grid min-h-screen lg:grid-cols-2">
+        <div className="relative hidden flex-col justify-between border-r border-white/[0.08] bg-gradient-to-br from-slate-900 via-violet-950/70 to-slate-950 p-10 lg:flex">
+          <div>
+            <h2 className="max-w-md text-3xl font-bold leading-tight tracking-tight text-white">
+              Start with your own workspace.
+            </h2>
+            <p className="mt-4 max-w-sm text-sm leading-relaxed text-violet-100/80">
+              Registration creates a dedicated workspace and links your account — ready for records and
+              insights.
+            </p>
+          </div>
+          <p className="text-xs text-violet-200/50">Secure • Multi-tenant</p>
+        </div>
+
+        <div className="flex items-center justify-center px-4 py-12 sm:px-8">
+          <div className="w-full max-w-md">
+            <div className="mb-8 lg:hidden">
+              <p className="text-2xl font-bold tracking-tight text-slate-50">Create account</p>
+              <p className="mt-1 text-sm text-slate-500">A workspace is created for you</p>
+            </div>
+
+            <div className="ui-card p-8 shadow-2xl shadow-black/40 sm:p-9">
+              <div className="hidden lg:block">
+                <p className="text-[0.7rem] font-semibold uppercase tracking-wider text-slate-500">
+                  Get started
+                </p>
+                <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-50">Create your account</h1>
+                <p className="mt-1 text-sm text-slate-500">Takes a minute. No credit card required.</p>
+              </div>
+
+              {error ? (
+                <div
+                  className="mt-6 rounded-xl border border-rose-500/35 bg-rose-500/[0.12] px-4 py-3 text-sm text-rose-100"
+                  role="alert"
+                >
+                  {error}
+                </div>
+              ) : null}
+
+              <form onSubmit={onSubmit} className="mt-8 space-y-5">
+                <div>
+                  <label htmlFor="reg-name" className="ui-label">
+                    Name
+                  </label>
+                  <input
+                    id="reg-name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    type="text"
+                    autoComplete="name"
+                    className="ui-input mt-2"
+                    placeholder="Your name"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="reg-email" className="ui-label">
+                    Email
+                  </label>
+                  <input
+                    id="reg-email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    type="email"
+                    autoComplete="email"
+                    className="ui-input mt-2"
+                    placeholder="you@company.com"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="reg-password" className="ui-label">
+                    Password
+                  </label>
+                  <input
+                    id="reg-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    type="password"
+                    autoComplete="new-password"
+                    className="ui-input mt-2"
+                    placeholder="Min 6 characters"
+                  />
+                </div>
+
+                <button disabled={isSubmitting} type="submit" className="ui-btn-primary w-full">
+                  {isSubmitting ? "Creating account…" : "Create account"}
+                </button>
+              </form>
+
+              <p className="mt-8 text-center text-sm text-slate-500">
+                Already have an account?{" "}
+                <Link to="/login" className="font-semibold text-indigo-300 transition hover:text-indigo-200">
+                  Sign in
+                </Link>
+              </p>
             </div>
           </div>
-
-          {error ? (
-            <div className="mt-4 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-              {error}
-            </div>
-          ) : null}
-
-          <form onSubmit={onSubmit} className="mt-6 space-y-4">
-            <div>
-              <label className="text-xs font-medium text-slate-300">Name</label>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                type="text"
-                autoComplete="name"
-                className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/60"
-                placeholder="Your name"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-medium text-slate-300">Email</label>
-              <input
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                type="email"
-                autoComplete="email"
-                className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/60"
-                placeholder="you@company.com"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-medium text-slate-300">Password</label>
-              <input
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                type="password"
-                autoComplete="new-password"
-                className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/40 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/60"
-                placeholder="Min 6 characters"
-              />
-            </div>
-
-            <button
-              disabled={isSubmitting}
-              type="submit"
-              className="w-full rounded-xl bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-4 py-2.5 text-sm font-semibold text-white shadow hover:opacity-95 disabled:opacity-60"
-            >
-              {isSubmitting ? "Creating account..." : "Create account"}
-            </button>
-          </form>
-
-          <p className="mt-5 text-sm text-slate-400">
-            Already have an account?{" "}
-            <Link to="/login" className="font-medium text-slate-100 hover:underline">
-              Sign in
-            </Link>
-          </p>
         </div>
       </div>
     </div>
   );
 }
-

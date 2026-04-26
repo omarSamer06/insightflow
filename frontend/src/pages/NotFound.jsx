@@ -2,23 +2,19 @@ import { Link } from "react-router-dom";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-900/40 p-6 shadow-xl">
-        <p className="text-xs text-slate-400">404</p>
-        <h1 className="mt-1 text-xl font-semibold">Page not found</h1>
-        <p className="mt-2 text-sm text-slate-400">
-          The page you’re looking for doesn’t exist.
+    <div className="flex min-h-screen items-center justify-center px-4">
+      <div className="ui-card w-full max-w-md p-8 text-center shadow-2xl shadow-black/50 sm:p-10">
+        <p className="text-[0.7rem] font-bold uppercase tracking-[0.2em] text-slate-500">404</p>
+        <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-50">Page not found</h1>
+        <p className="ui-subtitle mt-2">
+          The page you’re looking for doesn’t exist, or you don’t have access to it.
         </p>
-        <div className="mt-5">
-          <Link
-            to="/dashboard"
-            className="inline-flex rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-white/15"
-          >
-            Go to dashboard
+        <div className="mt-8">
+          <Link to="/dashboard" className="ui-btn-primary w-full sm:w-auto">
+            Back to dashboard
           </Link>
         </div>
       </div>
     </div>
   );
 }
-
