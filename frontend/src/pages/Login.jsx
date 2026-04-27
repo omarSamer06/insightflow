@@ -43,7 +43,8 @@ export default function Login() {
       <div className="grid min-h-screen lg:grid-cols-2">
         <div className="relative hidden flex-col justify-between border-r border-white/[0.08] bg-gradient-to-br from-slate-900 via-indigo-950/80 to-slate-950 p-10 lg:flex">
           <div>
-            <h2 className="max-w-md text-3xl font-bold leading-tight tracking-tight text-white">
+            <p className="text-2xl font-extrabold tracking-tight text-white">Insightflow</p>
+            <h2 className="mt-6 max-w-md text-3xl font-bold leading-tight tracking-tight text-white">
               Analytics that feel effortless.
             </h2>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-indigo-100/80">
@@ -55,12 +56,13 @@ export default function Login() {
               workspace.
             </p>
           </div>
-          <p className="text-xs text-indigo-200/50">© {new Date().getFullYear()} Workspace</p>
+          <p className="text-xs text-indigo-200/50">© {new Date().getFullYear()} Insightflow</p>
         </div>
 
         <div className="flex items-center justify-center px-4 py-12 sm:px-8">
           <div className="w-full max-w-md">
             <div className="mb-8 lg:hidden">
+              <p className="text-xl font-extrabold tracking-tight text-slate-50">Insightflow</p>
               <p className="text-2xl font-bold tracking-tight text-slate-50">Welcome back</p>
               <p className="mt-1 text-sm text-slate-500">Sign in to continue</p>
               <p className="mt-4 text-sm leading-relaxed text-slate-400">
