@@ -51,9 +51,9 @@ export default function Login() {
               Sign in to your workspace. Your data stays scoped to your tenant — secure by design.
             </p>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-indigo-100/70">
-              Manage your business data with clarity and control. This SaaS analytics dashboard lets you track
-              records, monitor performance, and gain insights through interactive charts—all within your own secure
-              workspace.
+              InsightFlow empowers you to turn raw data into actionable insights. Monitor performance, analyze
+              trends, and leverage AI-powered features to understand your business activity and make smarter,
+              data-driven decisions with confidence.
             </p>
           </div>
           <p className="text-xs text-indigo-200/50">© {new Date().getFullYear()} Insightflow</p>
@@ -69,9 +69,9 @@ export default function Login() {
                 Sign in to your workspace. Your data stays scoped to your tenant — secure by design.
               </p>
               <p className="mt-3 text-sm leading-relaxed text-slate-500">
-                Manage your business data with clarity and control. This SaaS analytics dashboard lets you track
-                records, monitor performance, and gain insights through interactive charts—all within your own secure
-                workspace.
+                InsightFlow empowers you to turn raw data into actionable insights. Monitor performance, analyze
+                trends, and leverage AI-powered features to understand your business activity and make smarter,
+                data-driven decisions with confidence.
               </p>
             </div>
 
