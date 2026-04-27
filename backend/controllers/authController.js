@@ -78,12 +78,10 @@ export async function registerUser(req, res, next) {
 
     await session.commitTransaction();
 
-    const token = generateToken({ id: user._id });
     res.status(201).json({
       success: true,
-      message: "Registration successful",
+      message: "Account created. Sign in with your email and password.",
       data: {
-        token,
         user: sanitizeUser(user),
         workspace: {
           id: workspace._id,

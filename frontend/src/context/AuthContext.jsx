@@ -55,18 +55,18 @@ export function AuthProvider({ children }) {
     try {
       const res = await api.post("/auth/register", { name, email, password });
       const newToken = res?.data?.data?.token;
-      const newUser = res?.data?.data?.user;
-      if (!newToken) throw new Error("Missing token in response");
-
-      localStorage.setItem("token", newToken);
-      setToken(newToken);
-      setUser(newUser || (decodeJwtPayload(newToken)?.id ? { id: decodeJwtPayload(newToken).id } : null));
-      return { ok: true };
+      if (newToken) {
+        const newUser = res?.data?.data?.user;
+        localStorage.setItem("token", newToken);
+        setToken(newToken);
+        setUser(
+          newUser || (decodeJwtPayload(newToken)?.id ? { id: decodeJwtPayload(newToken).id } : null)
+        );
+      }
+      return { ok: true, message: res?.data?.message || "" };
     } catch (error) {
       const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Registration failed";
+        error?.response?.data?.message || error?.message || "Registration failed";
       return { ok: false, message };
     }
   };

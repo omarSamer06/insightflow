@@ -24,18 +24,22 @@ export async function getInsights(req, res, next) {
       .exec();
 
     const stats = buildInsightStatsFromRecords(records);
-    const { summary, source } = await generateInsightSummary(stats);
+    const { summary, narrative, executiveSummary, source } = await generateInsightSummary(stats);
 
     res.status(200).json({
       success: true,
       message: "Insights ready",
       data: {
+        executiveSummary,
         summary,
+        narrative,
         keyStats: {
           totalAmount: stats.totalAmount,
           recordCount: stats.recordCount,
           topCategory: stats.topCategory,
           monthlyTrends: stats.monthlyTrends,
+          periodComparison: stats.periodComparison,
+          driverCategory: stats.driverCategory,
         },
         source,
       },

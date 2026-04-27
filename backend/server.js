@@ -1,8 +1,7 @@
+import "./initEnv.js";
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import morgan from "morgan";
-
 import { connectDB } from "./config/db.js";
 import { errorHandler, notFound } from "./middleware/errorMiddleware.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -12,8 +11,6 @@ import workspaceRoutes from "./routes/workspaceRoutes.js";
 import predictionsRoutes from "./routes/predictionsRoutes.js";
 import queryRoutes from "./routes/queryRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
-
-dotenv.config();
 
 const app = express();
 

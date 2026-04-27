@@ -31,6 +31,76 @@ function buildAnswerString(instruction, result) {
   return "Done.";
 }
 
+function buildUnifiedResponse(instruction, result) {
+  // Required shape: { type: "summary" | "list", explanation: string, data: [...] }
+  // We also support "aggregation" and keep backward-compatible fields elsewhere.
+  if (!result) {
+    return {
+      type: "summary",
+      explanation: "No result was returned.",
+      data: [],
+    };
+  }
+
+  if (result.kind === "records") {
+    const explanation = `Returned ${result.count} record${result.count === 1 ? "" : "s"} (limit ${result.limit}).`;
+    return { type: "list", explanation, data: result.records || [] };
+  }
+
+  if (result.kind === "aggregation") {
+    const explanation =
+      result.groupBy === "month"
+        ? "Aggregated totals by month (highest first)."
+        : "Aggregated totals by category (highest first).";
+    return { type: "aggregation", explanation, data: result.rows || [] };
+  }
+
+  if (result.kind === "summary") {
+    // Premium explanations for supported summaries.
+    if (result.metric === "max_month" && result.value) {
+      const driver = result.detail?.driverCategory?.name;
+      const driverText = driver ? ` primarily driven by ${driver} activity` : "";
+      return {
+        type: "summary",
+        explanation: `The highest-performing month was ${result.value}, with a total value of ${result.amount}${driverText}.`,
+        data: [result],
+      };
+    }
+    if (result.metric === "top_category" && result.value) {
+      return {
+        type: "summary",
+        explanation: `Top category was ${result.value}, contributing ${result.amount} in total value.`,
+        data: [result],
+      };
+    }
+    if (result.metric === "period_performance" && result.detail?.month) {
+      const d = result.detail;
+      const pct =
+        d.percentChange == null ? "an uncalculated change (no prior baseline)" : `${d.percentChange > 0 ? "+" : ""}${d.percentChange}%`;
+      const trend = d.deltaAmount > 0 ? "growth" : d.deltaAmount < 0 ? "decline" : "stable";
+      const cat = d.topCategory?.name ? `, primarily driven by ${d.topCategory.name}` : "";
+      return {
+        type: "summary",
+        explanation: `Last month (${d.month}) performance was ${result.value} vs ${d.previousMonth} at ${d.previousTotalAmount} (${pct}); trend is ${trend}${cat}.`,
+        data: [result],
+      };
+    }
+    const base = result.label && result.value != null ? `${result.label}: ${result.value}.` : "Summary computed.";
+    return { type: "summary", explanation: base, data: [result] };
+  }
+
+  // message / unsupported
+  const suggestions = [
+    "Try: “highest month”",
+    "Try: “last month performance”",
+    "Try: “top category”",
+    "Try: “list records from last month”",
+    "Try: “monthly totals”",
+  ];
+  const explanation = `${result.text || "I couldn’t map that request safely."} ${suggestions.join(" ")}`.trim();
+  return { type: "summary", explanation, data: [] };
+}
+
 function getWorkspaceId(req, res) {
   const workspaceId = req.user?.workspace;
   if (!workspaceId) {
@@ -74,6 +144,7 @@ export async function postNaturalLanguageQuery(req, res, next) {
           answer: ai.fallbackMessage,
           interpretation: null,
           result: null,
+          aiErrorDetail: ai.detail,
           metadata: {
             recordCountInContext: records.length,
             capped: records.length >= MAX_RECORDS_FOR_CONTEXT,
@@ -93,6 +164,12 @@ export async function postNaturalLanguageQuery(req, res, next) {
           interpretation: null,
           rawModelOutput: process.env.NODE_ENV === "development" ? ai.parsed : undefined,
           result: null,
+          unified: {
+            type: "summary",
+            explanation:
+              "I couldn’t map that request to a safe operation. Try: “highest month”, “last month performance”, “top category”, or “list records from last month”.",
+            data: [],
+          },
           metadata: {
             recordCountInContext: records.length,
             capped: records.length >= MAX_RECORDS_FOR_CONTEXT,
@@ -103,6 +180,7 @@ export async function postNaturalLanguageQuery(req, res, next) {
 
     const result = await executeNlInstruction(workspaceId, instruction);
     const answer = buildAnswerString(instruction, result);
+    const unified = buildUnifiedResponse(instruction, result);
 
     return res.status(200).json({
       success: true,
@@ -110,7 +188,9 @@ export async function postNaturalLanguageQuery(req, res, next) {
       data: {
         answer,
         interpretation: instruction,
+        interpretationSource: ai.source || "heuristic",
         result,
+        unified,
         metadata: {
           recordCountInContext: records.length,
           capped: records.length >= MAX_RECORDS_FOR_CONTEXT,

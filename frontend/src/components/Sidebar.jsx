@@ -28,16 +28,8 @@ const navSections = [
 
 export default function Sidebar() {
   return (
-    <aside className="hidden w-64 shrink-0 flex-col border-r border-white/[0.08] bg-slate-950/40 backdrop-blur-md md:flex">
-      <div className="p-5 pb-2">
-        <div className="ui-card ui-card-hover rounded-2xl p-5">
-          <p className="text-[0.65rem] font-semibold uppercase tracking-widest text-slate-500">
-            Product
-          </p>
-          <p className="mt-1.5 text-base font-bold tracking-tight text-slate-50">Analytics Suite</p>
-          <p className="mt-1 text-xs leading-relaxed text-slate-500">Multi-tenant workspace</p>
-        </div>
-      </div>
+    <aside className="hidden w-64 shrink-0 flex-col border-r border-white/[0.08] bg-gradient-to-b from-slate-950/65 via-slate-950/45 to-slate-950/35 backdrop-blur-xl md:flex">
+      <div className="px-5 pt-5" />
 
       <nav className="flex-1 overflow-y-auto px-3 pb-8 pt-2">
         {navSections.map((section) => (
@@ -55,13 +47,13 @@ export default function Sidebar() {
                     [
                       "group flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition duration-200",
                       isActive
-                        ? "bg-gradient-to-r from-indigo-500/15 to-violet-500/10 text-white shadow-sm shadow-indigo-500/10 ring-1 ring-inset ring-white/10"
-                        : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200",
+                        ? "bg-gradient-to-r from-indigo-500/20 to-violet-500/12 text-white shadow-md shadow-indigo-500/15 ring-1 ring-inset ring-white/10"
+                        : "text-slate-400 hover:bg-white/[0.06] hover:text-slate-200",
                     ].join(" ")
                   }
                 >
                   <span
-                    className="h-1.5 w-1.5 rounded-full bg-slate-600 transition group-hover:bg-slate-400"
+                    className="h-1.5 w-1.5 rounded-full bg-slate-600 transition group-hover:bg-slate-300 group-[.active]:bg-indigo-300"
                     aria-hidden
                   />
                   {l.label}

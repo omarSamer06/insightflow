@@ -36,7 +36,14 @@ export default function Register() {
       return;
     }
 
-    navigate("/dashboard", { replace: true });
+    navigate("/login", {
+      replace: true,
+      state: {
+        registered: true,
+        email: trimmedEmail,
+        message: res.message || "Account created. Sign in with your email and password.",
+      },
+    });
   };
 
   return (

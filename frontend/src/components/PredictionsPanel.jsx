@@ -104,6 +104,12 @@ export default function PredictionsPanel() {
                     ? moneyFmt.format(predData.predictedNextMonth.totalAmount)
                     : "—"}
                 </p>
+                {predData?.forecastSummary?.confidence ? (
+                  <p className="mt-2 text-xs text-slate-500">
+                    Confidence:{" "}
+                    <span className="font-semibold text-slate-200">{predData.forecastSummary.confidence}</span>
+                  </p>
+                ) : null}
                 {predData.growthPercent != null ? (
                   <div
                     className={[
@@ -129,7 +135,28 @@ export default function PredictionsPanel() {
                   <p className="mt-3 text-xs text-slate-500">Growth vs last month: n/a (baseline month)</p>
                 )}
               </div>
-              {predData.insight ? (
+              {predData?.forecastSummary?.explanation ? (
+                <p className="text-xs leading-relaxed text-slate-400 [text-wrap:pretty]">
+                  {predData.forecastSummary.explanation}
+                </p>
+              ) : null}
+              {predData.insightNarrative ? (
+                <div className="rounded-xl border border-white/10 bg-slate-950/40 p-4">
+                  <p className="ui-label text-cyan-200/80">Forecast narrative</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-100 [text-wrap:pretty]">
+                    {predData.insightNarrative.metric}
+                  </p>
+                  <p className="mt-2 text-xs leading-relaxed text-slate-400 [text-wrap:pretty]">
+                    {predData.insightNarrative.explanation}
+                  </p>
+                  <p className="mt-2 text-xs leading-relaxed text-slate-400 [text-wrap:pretty]">
+                    <span className="text-slate-300">Implication:</span> {predData.insightNarrative.implication}
+                  </p>
+                  <p className="mt-2 text-xs leading-relaxed text-slate-400 [text-wrap:pretty]">
+                    <span className="text-slate-300">Recommendation:</span> {predData.insightNarrative.recommendation}
+                  </p>
+                </div>
+              ) : predData.insight ? (
                 <p className="text-xs leading-relaxed text-slate-400 [text-wrap:pretty]">{predData.insight}</p>
               ) : null}
             </div>

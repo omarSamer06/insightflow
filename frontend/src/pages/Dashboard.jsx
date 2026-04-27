@@ -25,7 +25,11 @@ const PIE_COLORS = [
   "#94a3b8",
 ];
 import ChartCard from "../components/ChartCard";
-import FeatureShortcuts from "../components/FeatureShortcuts";
+import DataAssistantPanel from "../components/DataAssistantPanel";
+import InsightsPanel from "../components/InsightsPanel";
+import PredictionsPanel from "../components/PredictionsPanel";
+import RecordFormModal from "../components/RecordFormModal";
+import ReportGeneratorPanel from "../components/ReportGeneratorPanel";
 import ShellLayout from "../components/ShellLayout";
 import StatCard from "../components/StatCard";
 import { useAuth } from "../context/AuthContext";
@@ -43,6 +47,8 @@ export default function Dashboard() {
   const [records, setRecords] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [addOpen, setAddOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,7 +77,7 @@ export default function Dashboard() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [refreshKey]);
 
   const kpis = useMemo(() => computeKpis(records), [records]);
   const lineData = useMemo(() => buildLineSeries(records, 14), [records]);
@@ -106,6 +112,9 @@ export default function Dashboard() {
               <Link to="/records" className="ui-btn-primary">
                 Manage records
               </Link>
+              <button type="button" onClick={() => setAddOpen(true)} className="ui-btn-secondary">
+                Add record
+              </button>
               <Link to="/assistant" className="ui-btn-secondary">
                 Data assistant
               </Link>
@@ -115,6 +124,10 @@ export default function Dashboard() {
             </div>
           </div>
         </section>
+
+        <DataAssistantPanel />
+
+        <ReportGeneratorPanel />
 
         {isLoading ? (
           <section className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
@@ -158,7 +171,9 @@ export default function Dashboard() {
               />
             </section>
 
-            <FeatureShortcuts />
+            <PredictionsPanel />
+
+            <InsightsPanel />
 
             <section className="grid gap-6 lg:grid-cols-2">
               <ChartCard
@@ -309,6 +324,13 @@ export default function Dashboard() {
           </>
         )}
       </div>
+
+      <RecordFormModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onSuccess={() => setRefreshKey((k) => k + 1)}
+        editing={null}
+      />
     </ShellLayout>
   );
 }

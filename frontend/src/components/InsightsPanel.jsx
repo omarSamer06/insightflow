@@ -93,9 +93,48 @@ export default function InsightsPanel() {
               {insightData.source === "openai" ? "AI generated" : "Data-driven"}
             </span>
           </div>
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-200 [text-wrap:pretty]">
-            {insightData.summary}
-          </p>
+          {insightData.narrative ? (
+            <div className="space-y-3">
+              {insightData.executiveSummary ? (
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] p-4">
+                  <p className="ui-label text-emerald-200/80">Executive summary</p>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-100 [text-wrap:pretty]">
+                    {insightData.executiveSummary}
+                  </p>
+                </div>
+              ) : null}
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                <p className="ui-label text-violet-200/80">Metric</p>
+                <p className="mt-1 text-sm font-semibold text-slate-100 [text-wrap:pretty]">
+                  {insightData.narrative.metric}
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-sky-500/20 bg-sky-500/[0.05] p-4">
+                  <p className="ui-label text-sky-200/80">Explanation</p>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-200 [text-wrap:pretty]">
+                    {insightData.narrative.explanation}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.05] p-4">
+                  <p className="ui-label text-amber-200/80">Implication</p>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-200 [text-wrap:pretty]">
+                    {insightData.narrative.implication}
+                  </p>
+                </div>
+              </div>
+              <div className="rounded-xl border border-fuchsia-500/20 bg-fuchsia-500/[0.05] p-4">
+                <p className="ui-label text-fuchsia-200/80">Recommendation</p>
+                <p className="mt-1 text-sm leading-relaxed text-slate-200 [text-wrap:pretty]">
+                  {insightData.narrative.recommendation}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-200 [text-wrap:pretty]">
+              {insightData.summary}
+            </p>
+          )}
           {insightData.keyStats ? (
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <div className="rounded-xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 to-transparent p-4 transition hover:border-emerald-500/35">

@@ -26,7 +26,7 @@ export async function getPredictions(req, res, next) {
 
     const monthly = buildMonthlyAmountSeries(records);
     const forecast = forecastNextMonthFromSeries(monthly);
-    const { text: insight, source: insightSource } = await generatePredictionInsight({
+    const { text: insight, narrative, source: insightSource } = await generatePredictionInsight({
       monthly: monthly.map((m) => ({ month: m.month, totalAmount: m.totalAmount })),
       forecast: {
         predictedMonth: forecast.predictedMonth,
@@ -36,6 +36,26 @@ export async function getPredictions(req, res, next) {
         method: forecast.method,
       },
     });
+
+    const predictionValue = forecast.predictedTotal == null ? null : Number(forecast.predictedTotal);
+    const growthRate = forecast.growthPercent == null ? null : Number(forecast.growthPercent);
+    const confidence = forecast.confidence || "low";
+    const direction =
+      forecast.method === "empty"
+        ? "unavailable"
+        : forecast.growthLabel === "increase"
+          ? "upward"
+          : forecast.growthLabel === "decrease"
+            ? "downward"
+            : "stable";
+    const explanation =
+      forecast.method === "empty"
+        ? "No monthly history is available yet, so a forecast cannot be produced."
+        : forecast.monthsUsed < 2
+          ? `Projected next period is approximately ${predictionValue}. Confidence is low because there is only ${forecast.monthsUsed} month of history.`
+          : `Projected performance for the next period is approximately ${predictionValue}, representing ${
+              growthRate == null ? "an uncalculated change" : `${growthRate > 0 ? "+" : ""}${growthRate}%`
+            } based on a ${direction} trend. Confidence is ${confidence} based on ${forecast.monthsUsed} month(s) of history.`;
 
     res.status(200).json({
       success: true,
@@ -54,7 +74,16 @@ export async function getPredictions(req, res, next) {
         growthLabel: forecast.growthLabel,
         method: forecast.method,
         monthsUsed: forecast.monthsUsed,
+        confidence: forecast.confidence,
+        r2: forecast.r2,
+        forecastSummary: {
+          prediction: predictionValue,
+          growthRate,
+          confidence,
+          explanation,
+        },
         insight: insight || null,
+        insightNarrative: narrative || null,
         insightSource: insightSource,
       },
     });

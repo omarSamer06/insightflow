@@ -1,15 +1,20 @@
 import { buildMockReportNarrative } from "./reportMockNarrative.js";
+import { coerceReportNarrative } from "./reportNarrativeUtils.js";
 
-const SYSTEM = `You are a concise financial analytics writer for a secure multi-tenant SaaS dashboard. 
-The user will send ONLY aggregated JSON about one workspace (totals, monthly sums, top categories) — not raw rows. 
-You must respond with ONE JSON object (no markdown, no code fences) with exactly these string fields:
-"performanceOverview" — 2-4 short sentences: overall position and what stands out.
-"growthOrDecline" — 2-3 sentences: explain recent month-over-month change if provided; if not enough data, say so plainly.
-"recommendation" — 2-3 practical, business-oriented suggestions. Do not invent numbers; only use information from the input JSON.`;
+const SYSTEM = `You write premium, business-grade analytics narratives for a secure multi-tenant SaaS dashboard.
+Input is aggregated JSON only (totals, monthly totals, top categories). Do not invent numbers.
+
+Return ONE JSON object only (no markdown) with EXACT string keys:
+- "performanceOverview": 2–3 concise sentences with totals (total amount, record count) and top category.
+- "trendAnalysis": 2–3 concise sentences with growth rate vs previous month (percent + absolute delta) and interpretation.
+- "categoryBreakdown": 2–3 concise sentences with top category amount and (if possible) share of total.
+- "recommendations": 2–3 concise sentences with actionable next steps based on trend direction.
+
+Avoid vague filler like \"your data shows\". Use specific numbers from the JSON.`;
 
 /**
  * @param {object} report - output of aggregateWorkspaceReport: { summary, trends, categories }
- * @returns {Promise<{ performanceOverview: string, growthOrDecline: string, recommendation: string, source: "openai" | "empty" | "mock" }>}
+ * @returns {Promise<{ performanceOverview: string, trendAnalysis: string, categoryBreakdown: string, recommendations: string, source: "openai" | "empty" | "mock" }>}
  */
 export async function generateReportNarrative(report) {
   if (!report?.summary?.hasData) {
@@ -26,20 +31,8 @@ export async function generateReportNarrative(report) {
     const parsed = safeJsonParseModel(text);
     if (!parsed) throw new Error("Invalid JSON from model");
 
-    const p = String(parsed.performanceOverview || "").trim();
-    const g = String(parsed.growthOrDecline || parsed.growthDecline || "").trim();
-    const r = String(parsed.recommendation || "").trim();
-
-    if (!p && !g && !r) {
-      throw new Error("Empty narrative fields");
-    }
-
-    return {
-      performanceOverview: p || "See structured metrics in the report payload.",
-      growthOrDecline: g || "Month-over-month context is in the report trends.",
-      recommendation: r || "Use the category breakdown to prioritize reviews.",
-      source: "openai",
-    };
+    const n = coerceReportNarrative(parsed);
+    return { ...n, source: "openai" };
   } catch (err) {
     const message = err instanceof Error ? err.message : "OpenAI request failed";
     if (process.env.NODE_ENV !== "production") {

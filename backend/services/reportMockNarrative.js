@@ -1,17 +1,20 @@
 /**
  * Deterministic report copy when OpenAI is off or request fails, or for empty data.
  * @param {object} report - { summary, trends, categories }
- * @returns {{ performanceOverview: string, growthOrDecline: string, recommendation: string, source: "empty" | "mock" }}
+ * @returns {{ performanceOverview: string, trendAnalysis: string, categoryBreakdown: string, recommendations: string, source: "empty" | "mock" }}
  */
 export function buildMockReportNarrative(report) {
   const { summary, trends, categories } = report || {};
   if (!summary?.hasData) {
     return {
       performanceOverview:
-        "There is no data in this workspace yet. Add records to unlock totals, category breakdowns, and month-over-month trends.",
-      growthOrDecline: "N/A — not enough history to measure growth or decline until at least one month of activity is recorded.",
-      recommendation:
-        "Start by entering a few records across the categories you care about. Revisit this report after a few weeks to see momentum.",
+        "No report is available yet: 0 records are present in the workspace. Add records to establish a baseline for totals and category mix.",
+      trendAnalysis:
+        "Growth rate is not computed because there is no previous period to compare. Capture at least two calendar months to enable month-over-month interpretation.",
+      categoryBreakdown:
+        "Top category cannot be identified until categories exist in the dataset. Use consistent category labels to make the breakdown meaningful.",
+      recommendations:
+        "Add a starter set of categorized records, then rerun the report after the next month closes to measure change and identify drivers.",
       source: "empty",
     };
   }
@@ -19,51 +22,11 @@ export function buildMockReportNarrative(report) {
   const mom = trends?.monthOverMonth;
   const top = summary.topCategory || categories?.top;
 
-  const performanceOverview = [
-    `The workspace has ${summary.totalRecords} record${
-      summary.totalRecords === 1 ? "" : "s"
-    } totaling ${formatAmount(summary.totalAmount)}.`,
-    top
-      ? `The top category by amount is “${top.name}” with ${formatAmount(
-          top.totalAmount
-        )} across ${top.recordCount} record${top.recordCount === 1 ? "" : "s"}.`
-      : "Category split is not available.",
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  let growthOrDecline;
-  if (mom) {
-    const pct =
-      mom.percentChange == null
-        ? "N/A (baseline month was $0 or no prior comparison)"
-        : `${mom.percentChange > 0 ? "+" : ""}${mom.percentChange}%`;
-    growthOrDecline = `Comparing ${mom.fromMonth} to ${mom.toMonth}, total amount moved ${mom.direction} ` +
-      `by ${formatAmount(mom.deltaAmount)} (${pct} where applicable), from ${formatAmount(
-        mom.previousAmount
-      )} to ${formatAmount(mom.currentAmount)}.`;
-  } else if (trends?.monthlyTotals?.length === 1) {
-    const m = trends.monthlyTotals[0];
-    growthOrDecline = `Only ${m.month} is present in the data so far (${formatAmount(
-      m.totalAmount
-    )}). Add at least one more month to measure changes.`;
-  } else {
-    growthOrDecline = "Trend comparison is not available for the current date coverage.";
-  }
-
-  const recommendation = [
-    top ? `Revisit “${top.name}” to confirm the largest spend is expected.` : "Review the largest category once multiple categories exist.",
-    mom?.direction === "up"
-      ? "If the recent increase is not planned, consider tightening the next month’s plan."
-      : mom?.direction === "down"
-        ? "A decline may reflect less activity or lower ticket sizes; validate against your expectations."
-        : "Keep a steady review cadence as more months accumulate.",
-  ].join(" ");
-
   return {
-    performanceOverview,
-    growthOrDecline,
-    recommendation,
+    performanceOverview: buildPerformanceOverview(summary, top),
+    trendAnalysis: buildTrendAnalysis(mom),
+    categoryBreakdown: buildCategoryBreakdown(summary, top),
+    recommendations: buildRecommendations(mom, top),
     source: "mock",
   };
 }
@@ -72,4 +35,49 @@ function formatAmount(n) {
   const v = Number(n);
   if (!Number.isFinite(v)) return "0";
   return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(v);
+}
+
+function pctText(p) {
+  if (p == null) return "N/A";
+  return `${p > 0 ? "+" : ""}${p}%`;
+}
+
+function buildPerformanceOverview(summary, top) {
+  const total = formatAmount(summary.totalAmount);
+  const n = summary.totalRecords;
+  const topLine = top ? `Top category is ${top.name} at ${formatAmount(top.totalAmount)}.` : "Top category is unavailable.";
+  return `Total activity is ${total} across ${n} record${n === 1 ? "" : "s"}. ${topLine}`;
+}
+
+function buildTrendAnalysis(mom) {
+  if (!mom) {
+    return "Growth rate is not computed because fewer than two months are available. Add another month of data to enable month-over-month interpretation.";
+  }
+  const trend = mom.direction === "up" ? "growth" : mom.direction === "down" ? "decline" : "stable";
+  const delta = formatAmount(mom.deltaAmount);
+  const pct = pctText(mom.percentChange);
+  return `From ${mom.fromMonth} to ${mom.toMonth}, the trend is ${trend} at ${delta} (${pct}). This reflects changes in record volume and/or average amount versus the prior month.`;
+}
+
+function buildCategoryBreakdown(summary, top) {
+  if (!top) {
+    return "Category mix is not available yet. Use consistent category labels to make concentration and drivers measurable.";
+  }
+  const share = summary.totalAmount > 0 ? Math.round((top.totalAmount / summary.totalAmount) * 1000) / 10 : null;
+  const shareText = share == null ? "N/A" : `${share}% of total`;
+  return `${top.name} is the top contributor with ${formatAmount(top.totalAmount)} across ${top.recordCount} record${top.recordCount === 1 ? "" : "s"} (${shareText}). Concentration at the top category is the primary driver to monitor.`;
+}
+
+function buildRecommendations(mom, top) {
+  const cat = top?.name ? `Focus review on ${top.name}` : "Focus review on your largest category";
+  if (!mom) {
+    return `${cat} and standardize category labels. Once two months are available, validate growth rate and set targets for the next cycle.`;
+  }
+  if (mom.direction === "up") {
+    return `${cat} to confirm the increase is intentional and sustainable. If the growth is unplanned, apply caps or approvals to reduce month-over-month volatility.`;
+  }
+  if (mom.direction === "down") {
+    return `${cat} to determine whether the decline is efficiency or reduced activity. If this is demand-driven, adjust the next month plan and investigate the biggest drops.`;
+  }
+  return `${cat} to reduce concentration risk and improve signal quality. Maintain the current run-rate while tightening categorization and monitoring outliers.`;
 }

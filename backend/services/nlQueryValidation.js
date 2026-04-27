@@ -6,7 +6,11 @@ export const SUMMARY_METRICS = new Set([
   "max_month",
   "top_category",
   "average_amount",
+  "period_performance",
 ]);
+
+export const AGG_GROUP_BY = new Set(["month", "category"]);
+export const AGG_METRICS = new Set(["total_amount", "record_count", "average_amount"]);
 
 /**
  * @returns {object | null} normalized safe instruction, or null if invalid
@@ -25,7 +29,8 @@ export function validateAndNormalizeInstruction(raw) {
   if (type === "summary") {
     const metric = String(raw.metric || "").toLowerCase();
     if (!SUMMARY_METRICS.has(metric)) return null;
-    return { type: "summary", metric };
+    const dateRange = normalizeDateRangeToken(raw.dateRange);
+    return { type: "summary", metric, dateRange };
   }
 
   if (type === "filter") {
@@ -42,6 +47,26 @@ export function validateAndNormalizeInstruction(raw) {
       }
     }
     return { type: "filter", category, dateRange, limit };
+  }
+
+  if (type === "aggregation") {
+    const groupBy = String(raw.groupBy || "").toLowerCase();
+    if (!AGG_GROUP_BY.has(groupBy)) return null;
+    const metric = String(raw.metric || "").toLowerCase();
+    if (!AGG_METRICS.has(metric)) return null;
+    const dateRange = normalizeDateRangeToken(raw.dateRange);
+    const category =
+      raw.category == null || raw.category === ""
+        ? undefined
+        : String(raw.category).trim().slice(0, 100);
+    let limit = 12;
+    if (raw.limit != null) {
+      const n = Math.floor(Number(raw.limit));
+      if (Number.isFinite(n)) {
+        limit = Math.min(60, Math.max(1, n));
+      }
+    }
+    return { type: "aggregation", groupBy, metric, dateRange, category, limit };
   }
 
   return null;

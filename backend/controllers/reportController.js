@@ -27,8 +27,9 @@ export async function getReport(req, res, next) {
           ...report.summary,
           narrative: {
             performanceOverview: ai.performanceOverview,
-            growthOrDecline: ai.growthOrDecline,
-            recommendation: ai.recommendation,
+            trendAnalysis: ai.trendAnalysis,
+            categoryBreakdown: ai.categoryBreakdown,
+            recommendations: ai.recommendations,
             source: ai.source,
           },
         },

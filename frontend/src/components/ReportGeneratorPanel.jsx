@@ -349,28 +349,34 @@ function ReportAiBlock({ summary }) {
 
   return (
     <div className="report-section">
-      <h3 className="report-section-title">AI explanation</h3>
+      <h3 className="report-section-title">Report narrative</h3>
       <p className="mt-1 text-sm text-slate-500">
-        Executive-style commentary derived from the figures above.{" "}
+        Business-analyst commentary derived from the figures above.{" "}
         <SourceBadge className="align-middle" source={n.source} />
       </p>
       <div className="mt-4 space-y-4">
-        <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/[0.06] p-4 sm:p-5">
-          <p className="ui-label text-indigo-200/80">Performance overview</p>
-          <p className="mt-2 text-sm leading-relaxed text-slate-200 [text-wrap:pretty]">
+        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] p-4 sm:p-5">
+          <p className="ui-label text-emerald-200/80">Performance overview</p>
+          <p className="mt-2 text-sm leading-relaxed text-slate-100 [text-wrap:pretty]">
             {n.performanceOverview}
           </p>
         </div>
         <div className="rounded-xl border border-sky-500/20 bg-sky-500/[0.05] p-4 sm:p-5">
-          <p className="ui-label text-sky-200/80">Growth and decline</p>
-          <p className="mt-2 text-sm leading-relaxed text-slate-200 [text-wrap:pretty]">
-            {n.growthOrDecline}
+          <p className="ui-label text-sky-200/80">Trend analysis</p>
+          <p className="mt-2 text-sm leading-relaxed text-slate-100 [text-wrap:pretty]">
+            {n.trendAnalysis}
+          </p>
+        </div>
+        <div className="rounded-xl border border-violet-500/20 bg-violet-500/[0.05] p-4 sm:p-5">
+          <p className="ui-label text-violet-200/80">Category breakdown</p>
+          <p className="mt-2 text-sm leading-relaxed text-slate-100 [text-wrap:pretty]">
+            {n.categoryBreakdown}
           </p>
         </div>
         <div className="rounded-xl border border-fuchsia-500/20 bg-fuchsia-500/[0.05] p-4 sm:p-5">
           <p className="ui-label text-fuchsia-200/80">Recommendations</p>
-          <p className="mt-2 text-sm leading-relaxed text-slate-200 [text-wrap:pretty]">
-            {n.recommendation}
+          <p className="mt-2 text-sm leading-relaxed text-slate-100 [text-wrap:pretty]">
+            {n.recommendations}
           </p>
         </div>
       </div>

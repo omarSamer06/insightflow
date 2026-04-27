@@ -155,13 +155,21 @@ export default function DataAssistantPanel() {
 }
 
 function AssistantResult({ data }) {
-  const { answer, interpretation, result, metadata } = data || {};
+  const { answer, interpretation, result, unified, metadata, aiErrorDetail, interpretationSource } = data || {};
   const capped = metadata?.capped;
+
+  // Prefer the standardized response when present.
+  const unifiedExplanation = unified?.explanation;
 
   if (!result && answer) {
     return (
       <div className="assistant-fade-in rounded-xl border border-sky-500/20 bg-sky-500/5 p-4 sm:p-5">
         <p className="text-sm font-medium leading-relaxed text-slate-100 [text-wrap:pretty]">{answer}</p>
+        {aiErrorDetail ? (
+          <p className="mt-3 rounded-lg border border-white/10 bg-slate-950/60 p-2.5 font-mono text-[0.65rem] leading-relaxed text-slate-500 [text-wrap:pretty] [overflow-wrap:anywhere]">
+            {aiErrorDetail}
+          </p>
+        ) : null}
         {capped ? <MetadataNote capped={capped} /> : null}
       </div>
     );
@@ -171,13 +179,18 @@ function AssistantResult({ data }) {
     return null;
   }
 
+  if (unified && (unified.type === "summary" || unified.type === "aggregation" || unified.type === "list")) {
+    // Use unified explanation as the primary “assistant” line.
+    // Fall through to existing rendering for tables/records.
+  }
+
   if (result.kind === "message") {
     return (
       <div className="assistant-fade-in rounded-xl border border-amber-500/25 bg-amber-500/5 p-4 sm:p-5">
         {interpretation?.type ? (
           <p className="ui-label text-amber-200/80">Note</p>
         ) : null}
-        <p className="text-sm text-slate-200 [text-wrap:pretty]">{result.text || answer}</p>
+        <p className="text-sm text-slate-200 [text-wrap:pretty]">{unifiedExplanation || result.text || answer}</p>
         {capped ? <MetadataNote capped={capped} /> : null}
       </div>
     );
@@ -189,7 +202,7 @@ function AssistantResult({ data }) {
         <div className="rounded-xl border border-white/[0.1] bg-gradient-to-br from-slate-950/80 to-indigo-950/30 p-5 ring-1 ring-inset ring-white/[0.04]">
           <p className="ui-label text-indigo-300/90">Result</p>
           <p className="mt-2 text-base font-medium leading-relaxed text-white [text-wrap:pretty]">
-            {answer}
+            {unifiedExplanation || answer}
           </p>
           {result.value != null && result.metric !== "max_month" && result.metric !== "top_category" ? (
             <p className="mt-3 font-mono text-2xl font-bold tabular-nums text-emerald-200/95">
@@ -208,7 +221,7 @@ function AssistantResult({ data }) {
     const rows = result.records || [];
     return (
       <div className="assistant-fade-in space-y-3">
-        <p className="text-sm font-medium text-slate-200 [text-wrap:pretty]">{answer}</p>
+        <p className="text-sm font-medium text-slate-200 [text-wrap:pretty]">{unifiedExplanation || answer}</p>
         <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-slate-950/50">
           <div className="max-h-80 overflow-auto">
             <table className="w-full min-w-[28rem] border-collapse text-left text-sm">

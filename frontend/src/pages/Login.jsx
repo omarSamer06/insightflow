@@ -9,7 +9,7 @@ export default function Login() {
 
   const redirectTo = location.state?.from || "/dashboard";
 
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => location.state?.email || "");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -81,6 +81,16 @@ export default function Login() {
                 <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-50">Welcome back</h1>
                 <p className="mt-1 text-sm text-slate-500">Enter your credentials to access the dashboard.</p>
               </div>
+
+              {location.state?.registered ? (
+                <div
+                  className="mt-6 rounded-xl border border-emerald-500/35 bg-emerald-500/[0.1] px-4 py-3 text-sm text-emerald-100 [text-wrap:pretty]"
+                  role="status"
+                >
+                  {location.state?.message ||
+                    "Account created. Sign in with your email and password."}
+                </div>
+              ) : null}
 
               {error ? (
                 <div
