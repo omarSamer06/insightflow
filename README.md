@@ -76,9 +76,4 @@ This makes the system robust and production-ready even without external AI depen
 
 ---
 
-## 📦 Installation
 
-### 1. Clone the repository
-```bash
-git clone https://github.com/YOUR_USERNAME/insightflow.git
-cd insightflow
